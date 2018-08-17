@@ -3,6 +3,7 @@ import micropython
 
 
 p0 = Pin(0, Pin.OUT, value=1)
+p2 = Pin(2, Pin.OUT, value=1)
 
 
 def read_int(filename):
