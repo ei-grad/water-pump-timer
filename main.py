@@ -1,13 +1,40 @@
-from machine import Pin, Timer, reset
+from machine import Pin, Timer
+from machine import reset  # noqa
 import micropython
 from time import sleep_ms
 
 
-RELAY_ON = 0
-RELAY_OFF = 1
+class Relay(object):
 
-p0 = Pin(0, Pin.OUT, value=RELAY_ON)
-p2 = Pin(2, Pin.OUT, value=RELAY_OFF)
+    ON = 0
+    OFF = 1
+
+    def __init__(self, name, pin_number, initial_value):
+        self.name = name
+        self.pin = Pin(pin_number, Pin.OUT, value=initial_value)
+
+    def switch_on(self):
+        if self.pin.value() != Relay.ON:
+            print("%s: TURNING ON" % self.name)
+            self.pin.value(Relay.ON)
+
+    def switch_off(self):
+        if self.pin.value() != Relay.OFF:
+            print("%s: TURNING OFF" % self.name)
+            self.pin.value(Relay.OFF)
+
+    def is_on(self):
+        return self.pin.value() == Relay.ON
+
+    def is_off(self):
+        return self.pin.value() == Relay.OFF
+
+    def state(self):
+        return ['ON', 'OFF'][self.pin.value()]
+
+
+pump_relay = Relay('PUMP', 0, Relay.OFF)
+notebooks_relay = Relay('NOTEBOOKS', 2, Relay.OFF)
 
 
 def format_seconds(seconds):
@@ -36,8 +63,9 @@ class Config(object):
             setattr(self, k, v)
 
     def __repr__(self):
-        return '<Config:' + ' '.join([
-            str(getattr(self, i)) for i in self.properties
+        return '<Config:' + ';'.join([
+            '%s:%s' % (i, getattr(self, i))
+            for i in self.properties
         ]) + '>'
 
     def set(self, k, v):
@@ -49,21 +77,40 @@ class Config(object):
             f.write('\n')
 
 
+class State(object):
+
+    STOP = 0
+    PUMP = 1
+    NOTEBOOKS = 2
+    AFTERWORK = 3
+    UNKNOWN = 4
+
+    @staticmethod
+    def name(state):
+        return [
+            'STATE_STOP',
+            'STATE_PUMP',
+            'STATE_NOTEBOOKS',
+            'STATE_AFTERWORK',
+            'STATE_UNKNOWN',
+        ][state]
+
+
 class App(object):
 
-    STATE_AFTERWORK = 0
-    STATE_PUMP = 1
-    STATE_NOTEBOOKS = 2
-
     def __init__(self):
-        self.counter = 0
-        self.timer = Timer(-1)
-        self.config = Config()
+        self.running = False
         self.rounds = 0
+        self.counter = 0
         self.last_pump_working = 0
         self.current_round_started_at = 0
+        self.timer = Timer(-1)
+        self.config = Config()
 
     def start(self):
+        self.running = True
+        self.rounds = 0
+        self.counter = 0
         self.last_pump_working = 0
         self.current_round_started_at = 0
         self.timer.deinit()
@@ -73,6 +120,10 @@ class App(object):
             callback=self.tick_irq,
         )
 
+    def stop(self):
+        self.running = False
+        self.timer.deinit()
+
     def tick_irq(self, t):
         self.counter += self.config.tick_period
         micropython.schedule(self.tick, self.counter)
@@ -80,14 +131,26 @@ class App(object):
     def get_desired_state(self, t):
 
         if self.rounds >= self.config.rounds:
-            return App.STATE_AFTERWORK
+            return State.AFTERWORK
 
         time_since_round_start = t - self.current_round_started_at
 
         if time_since_round_start < self.config.duration:
-            return App.STATE_PUMP
+            return State.PUMP
 
-        return App.STATE_NOTEBOOKS
+        return State.NOTEBOOKS
+
+    @property
+    def state(self):
+        if not self.running:
+            return State.STOP
+        if self.rounds >= self.config.rounds:
+            return State.AFTERWORK
+        if pump_relay.is_on() and notebooks_relay.is_off():
+            return State.PUMP
+        if notebooks_relay.is_on() and pump_relay.is_off():
+            return State.NOTEBOOKS
+        return State.UNKNOWN
 
     def tick(self, t):
 
@@ -98,45 +161,69 @@ class App(object):
 
         desired_state = self.get_desired_state(t)
 
-        if desired_state == App.STATE_PUMP:
-            self.ensure_relay_off_on(p2, p0)
+        if desired_state == State.PUMP:
+            if not notebooks_relay.is_off():
+                notebooks_relay.switch_off()
+            if not pump_relay.is_on():
+                sleep_ms(100)
+                pump_relay.switch_on()
             pump_working = t - self.current_round_started_at
             pump_state = 'PUMP_WORKING:%s PUMP_REMAINING:%s' % (
                 format_seconds(pump_working),
                 format_seconds(self.config.duration - pump_working),
             )
-        elif desired_state == App.STATE_NOTEBOOKS:
-            self.ensure_relay_off_on(p0, p2)
-            pump_state = 'PUMP_STANDBY:%s PUMP_LAUNCH_IN:%s' % (
-                format_seconds(t - self.last_pump_working),
-                format_seconds(self.current_round_started_at + self.config.interval - t),
-            )
-        elif desired_state == App.STATE_AFTERWORK:
+        elif desired_state == State.NOTEBOOKS:
+            if not pump_relay.is_off():
+                pump_relay.switch_off()
+            if not notebooks_relay.is_on():
+                sleep_ms(100)
+                notebooks_relay.switch_on()
             pump_state = 'PUMP_STANDBY:%s' % format_seconds(t - self.last_pump_working)
+            if self.rounds < self.config.rounds - 1:
+                pump_state += ' PUMP_LAUNCH_IN:%s' % format_seconds(
+                    self.current_round_started_at + self.config.interval - t)
         else:
-            pump_state = '<-- UNREACHABLE CODE'
+            pump_state = 'PUMP_STANDBY:%s' % format_seconds(t - self.last_pump_working)
 
-        if p0.value() == 0:
+        if self.state != desired_state:
+            print("Error: desired state is %s but app.state says it is %s" % (
+                State.name(desired_state),
+                State.name(self.state),
+            ))
+
+        if pump_relay.is_on():
             self.last_pump_working = t
 
-        print('%s %s PUMP:%s NOTEBOOKS:%s ROUNDS:%d %s' % (
+        print('%s %s PUMP:%s NOTEBOOKS:%s ROUNDS:%d/%d %s' % (
             format_seconds(t),
-            ['STATE_AFTERWORK', 'STATE_PUMP', 'STATE_NOTEBOOKS'][desired_state],
-            ['ON', 'OFF'][p0.value()],
-            ['ON', 'OFF'][p2.value()],
-            self.rounds,
+            State.name(self.state),
+            pump_relay.state(),
+            notebooks_relay.state(),
+            self.rounds, self.config.rounds,
             pump_state,
         ))
 
-    def ensure_relay_off_on(self, a, b):
-        if a.value() != RELAY_OFF:
-            a.value(RELAY_OFF)
-        if b.value() != RELAY_ON:
-            sleep_ms(100)
-            b.value(RELAY_ON)
 
-    def reset(self):
-        reset()
+def switch_relays():
+
+    if app.state in [State.PUMP, State.NOTEBOOKS]:
+        print("Can't switch relays while the app is in active state. You can "
+              "execute `app.stop()` to stop the app.")
+        return
+
+    if pump_relay.is_on() and notebooks_relay.is_off():
+        pump_relay.switch_off()
+        sleep_ms(100)
+        notebooks_relay.switch_on()
+
+    elif notebooks_relay.is_on() and pump_relay.is_off():
+        notebooks_relay.switch_off()
+        sleep_ms(100)
+        pump_relay.switch_on()
+
+    else:
+        print("Can't switch: PUMP:%s NOTEBOOKS:%s" % (
+            pump_relay.state(), notebooks_relay.state()))
 
 
 app = App()
