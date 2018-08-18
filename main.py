@@ -111,6 +111,10 @@ class App(object):
                 format_seconds(t - self.last_pump_working),
                 format_seconds(self.current_round_started_at + self.config.interval - t),
             )
+        elif desired_state == App.STATE_AFTERWORK:
+            pump_state = 'PUMP_STANDBY:%s' % format_seconds(t - self.last_pump_working)
+        else:
+            pump_state = '<-- UNREACHABLE CODE'
 
         if p0.value() == 0:
             self.last_pump_working = t
