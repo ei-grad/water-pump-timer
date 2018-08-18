@@ -107,6 +107,31 @@ class App(object):
             return State.NOTEBOOKS
         return State.UNKNOWN
 
+    def get_status(self):
+        state = self.state()
+        if state == State.PUMP:
+            pump_working = self.time - self.current_round_started_at
+            pump_state = 'PUMP_WORKING:%s PUMP_REMAINING:%s' % (
+                format_seconds(pump_working),
+                format_seconds(self.config.duration - pump_working),
+            )
+        elif state == State.NOTEBOOKS:
+            pump_state = 'PUMP_STANDBY:%s' % format_seconds(self.time - self.last_pump_working)
+            if self.rounds < self.config.rounds - 1:
+                pump_state += ' PUMP_LAUNCH_IN:%s' % format_seconds(
+                    self.current_round_started_at + self.config.interval - self.time)
+        else:
+            pump_state = 'PUMP_STANDBY:%s' % format_seconds(self.time - self.last_pump_working)
+
+        return '%s %s PUMP:%s NOTEBOOKS:%s ROUNDS:%d/%d %s' % (
+            format_seconds(self.time),
+            State.name(state),
+            self.pump_relay.state(),
+            self.notebooks_relay.state(),
+            self.rounds, self.config.rounds,
+            pump_state,
+        )
+
     def tick(self):
 
         if self.rounds < self.config.rounds:
@@ -122,23 +147,12 @@ class App(object):
             if not self.pump_relay.is_active():
                 sleep_ms(100)
                 self.pump_relay.switch(Relay.ON)
-            pump_working = self.time - self.current_round_started_at
-            pump_state = 'PUMP_WORKING:%s PUMP_REMAINING:%s' % (
-                format_seconds(pump_working),
-                format_seconds(self.config.duration - pump_working),
-            )
         elif desired_state == State.NOTEBOOKS:
             if not not self.pump_relay.is_active():
                 self.pump_relay.switch(Relay.OFF)
             if not self.notebooks_relay.is_active():
                 sleep_ms(100)
                 self.notebooks_relay.switch(Relay.ON)
-            pump_state = 'PUMP_STANDBY:%s' % format_seconds(self.time - self.last_pump_working)
-            if self.rounds < self.config.rounds - 1:
-                pump_state += ' PUMP_LAUNCH_IN:%s' % format_seconds(
-                    self.current_round_started_at + self.config.interval - self.time)
-        else:
-            pump_state = 'PUMP_STANDBY:%s' % format_seconds(self.time - self.last_pump_working)
 
         if self.state() != desired_state:
             print("Error: desired state is %s but app.state() says it is %s" % (
@@ -149,14 +163,7 @@ class App(object):
         if self.pump_relay.is_active():
             self.last_pump_working = self.time
 
-        print('%s %s PUMP:%s NOTEBOOKS:%s ROUNDS:%d/%d %s' % (
-            format_seconds(self.time),
-            State.name(self.state()),
-            self.pump_relay.state(),
-            self.notebooks_relay.state(),
-            self.rounds, self.config.rounds,
-            pump_state,
-        ))
+        print(self.get_status())
 
     def switch_relays(self):
         if self.state() in [State.PUMP, State.NOTEBOOKS]:

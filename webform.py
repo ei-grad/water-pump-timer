@@ -6,8 +6,9 @@ class WebForm(object):
 
     template = '''<html><head>
 <style>
+body {{max-width:480px;}}
 h1, h3, div {{margin:1%;}}
-form {{max-width:480px;margin:0;}}
+form {{margin:0;}}
 label, input {{display:inline-block;width:48%;margin:1%;}}
 input[type=submit] {{width:98%;}}
 input[type=text] {{text-align:right;}}
@@ -15,6 +16,7 @@ input[type=text] {{text-align:right;}}
 <body>
 <div>{message}</div>
 <h1>Water pump timer</h1>
+<div>{status}</div>
 <form action=switch method=POST><input type=submit value=Switch></form>
 <form action=reset method=POST><input type=submit value=Reboot></form>
 <form action=start method=POST><input type=submit value=Start></form>
@@ -66,7 +68,9 @@ input[type=text] {{text-align:right;}}
         if method == 'GET':
             if action == '/':
                 send_http_response(client_socket, 200, self.template.format(
-                    message='', **self.app.config.__dict__))
+                    message='',
+                    status=self.app.get_status().replace(' ', '<br/>'),
+                    **self.app.config.__dict__))
             else:
                 send_http_response(client_socket, 404, '')
         elif method == 'POST':
@@ -91,7 +95,9 @@ input[type=text] {{text-align:right;}}
                 send_http_response(client_socket, 404, '')
                 return
             send_http_response(client_socket, 200, self.template.format(
-                message=message, **self.app.config.__dict__))
+                message=message,
+                status=self.app.get_status().replace(' ', '<br/>'),
+                **self.app.config.__dict__))
         else:
             send_http_response(client_socket, 405, '')
 
