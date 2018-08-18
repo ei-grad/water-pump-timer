@@ -10,13 +10,56 @@ currently it just does the cycle for 10 times.
 The board is ESP8266-01, running [micropython](http://micropython.org/). Its
 GPIO 0/2 pins are connected to two SRD-05VDC-SL-C relays.
 
-How to connect to device
-------------------------
+Micropython docs for ESP8266: https://docs.micropython.org/en/latest/esp8266/index.html
+
+Initial board configuration
+---------------------------
+
+1. Connect ESP8266 via developer board to your PC in firmware mode (hold the
+   red button on the down side of the board while connecting).
+
+2. Erase the flash and load the micropython firmware to it:
+
+```bash
+esptool -p /dev/ttyUSB0 -b 115200 erase_flash
+esptool -p /dev/ttyUSB0 -b 115200 write_flash --flash_mode qio 0x0 ./esp8266-20180511-v1.9.4.bin
+```
+
+3. Reattach the developer board with ESP8266 in regular mode (not holding the red button).
+
+4. Connect to the TTY REPL:
+
+```bash
+screen /dev/ttyUSB0 115200
+```
+
+4. Use the TTY REPL to connect the ESP8266 to WiFi:
+
+```python
+wlan = network.WLAN(network.STA_IF)
+wlan.active(True)
+wlan.scan()
+wlan.connect(ssid, passwd)
+```
+
+5. Enable the WebREPL and specify its password.
+
+```python
+import webrepl_setup
+```
+
+It would ask for required information interactively.
+
+How to connect to the configured device
+---------------------------------------
 
 1. Clone WebREPL: https://github.com/micropython/webrepl.git
 2. Open its webrepl.html in browser
-3. Enter the address ws://x.x.x.x:8266/, click "Connect"
-4. Enter the password
+3. Enter the board address `ws://x.x.x.x:8266/` (where the `x.x.x.x` is the IP
+   address, which you can get from your WiFi router DHCP leases table, or on
+   the TTY while connecting the chip to developer board), and then push the
+   "Connect" button.
+4. Enter the WebREPL password
 
 Quick reference for REPL
 ------------------------
@@ -25,6 +68,7 @@ Available useful variables:
 
 * `p0` - GPIO pin 0, controls the water pump relay
 * `p2` - GPIO pin 2, controls the second relay (not connected for now)
+* `app.config`
 
 Turn on the pump:
 
@@ -37,3 +81,14 @@ Turn off the pump:
 ```python
 p0.value(1)
 ```
+
+Change interval, duration and rounds count:
+
+```python
+app.config.set('interval', 60)
+app.config.set('duration', 10)
+app.config.set('rounds', 3)
+```
+
+All times are in seconds. Settings are applied immediately and are saved on the
+persistent storage on the ESP8266 chip.
