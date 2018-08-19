@@ -6,10 +6,10 @@ from relay import Relay
 
 
 pump_relay = Relay('PUMP', 0, Relay.OFF)
-notebooks_relay = Relay('NOTEBOOKS', 2, Relay.OFF)
+load_relay = Relay('LOAD', 2, Relay.OFF)
 
 print("Starting App")
-app = App(pump_relay, notebooks_relay)
+app = App(pump_relay, load_relay)
 app.start()
 
 gc.collect()

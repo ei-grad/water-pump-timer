@@ -35,7 +35,7 @@ class State(object):
 
     STOP = 0
     PUMP = 1
-    NOTEBOOKS = 2
+    LOAD = 2
     AFTERWORK = 3
     UNKNOWN = 4
 
@@ -44,7 +44,7 @@ class State(object):
         return [
             'STATE_STOP',
             'STATE_PUMP',
-            'STATE_NOTEBOOKS',
+            'STATE_LOAD',
             'STATE_AFTERWORK',
             'STATE_UNKNOWN',
         ][state]
@@ -52,9 +52,9 @@ class State(object):
 
 class App(object):
 
-    def __init__(self, pump_relay, notebooks_relay):
+    def __init__(self, pump_relay, load_relay):
         self.pump_relay = pump_relay
-        self.notebooks_relay = notebooks_relay
+        self.load_relay = load_relay
         self.running = False
         self.rounds = 0
         self.time = 0
@@ -94,17 +94,17 @@ class App(object):
         if time_since_round_start < self.config.duration:
             return State.PUMP
 
-        return State.NOTEBOOKS
+        return State.LOAD
 
     def state(self):
         if not self.running:
             return State.STOP
         if self.rounds >= self.config.rounds:
             return State.AFTERWORK
-        if self.pump_relay.is_active() and not self.notebooks_relay.is_active():
+        if self.pump_relay.is_active() and not self.load_relay.is_active():
             return State.PUMP
-        if self.notebooks_relay.is_active() and not self.pump_relay.is_active():
-            return State.NOTEBOOKS
+        if self.load_relay.is_active() and not self.pump_relay.is_active():
+            return State.LOAD
         return State.UNKNOWN
 
     def get_status(self):
@@ -115,7 +115,7 @@ class App(object):
                 format_seconds(pump_working),
                 format_seconds(self.config.duration - pump_working),
             )
-        elif state == State.NOTEBOOKS:
+        elif state == State.LOAD:
             pump_state = 'PUMP_STANDBY:%s' % format_seconds(self.time - self.last_pump_working)
             if self.rounds < self.config.rounds - 1:
                 pump_state += ' PUMP_LAUNCH_IN:%s' % format_seconds(
@@ -123,11 +123,11 @@ class App(object):
         else:
             pump_state = 'PUMP_STANDBY:%s' % format_seconds(self.time - self.last_pump_working)
 
-        return '%s %s PUMP:%s NOTEBOOKS:%s ROUNDS:%d/%d %s' % (
+        return '%s %s PUMP:%s LOAD:%s ROUNDS:%d/%d %s' % (
             format_seconds(self.time),
             State.name(state),
             self.pump_relay.state(),
-            self.notebooks_relay.state(),
+            self.load_relay.state(),
             self.rounds, self.config.rounds,
             pump_state,
         )
@@ -142,17 +142,17 @@ class App(object):
         desired_state = self.get_desired_state()
 
         if desired_state == State.PUMP:
-            if not not self.notebooks_relay.is_active():
-                self.notebooks_relay.switch(Relay.OFF)
+            if not not self.load_relay.is_active():
+                self.load_relay.switch(Relay.OFF)
             if not self.pump_relay.is_active():
                 sleep_ms(100)
                 self.pump_relay.switch(Relay.ON)
-        elif desired_state == State.NOTEBOOKS:
+        elif desired_state == State.LOAD:
             if not not self.pump_relay.is_active():
                 self.pump_relay.switch(Relay.OFF)
-            if not self.notebooks_relay.is_active():
+            if not self.load_relay.is_active():
                 sleep_ms(100)
-                self.notebooks_relay.switch(Relay.ON)
+                self.load_relay.switch(Relay.ON)
 
         if self.state() != desired_state:
             print("Error: desired state is %s but app.state() says it is %s" % (
@@ -166,20 +166,20 @@ class App(object):
         print(self.get_status())
 
     def switch_relays(self):
-        if self.state() in [State.PUMP, State.NOTEBOOKS]:
+        if self.state() in [State.PUMP, State.LOAD]:
             message = "ERROR: Can't switch relays while the app is in the active state."
-        elif self.pump_relay.is_active() and not self.notebooks_relay.is_active():
+        elif self.pump_relay.is_active() and not self.load_relay.is_active():
             self.pump_relay.switch(Relay.OFF)
             sleep_ms(100)
-            self.notebooks_relay.switch(Relay.ON)
-            message = "Switched to notebooks."
-        elif self.notebooks_relay.is_active() and not self.pump_relay.is_active():
-            self.notebooks_relay.switch(Relay.OFF)
+            self.load_relay.switch(Relay.ON)
+            message = "Switched to load."
+        elif self.load_relay.is_active() and not self.pump_relay.is_active():
+            self.load_relay.switch(Relay.OFF)
             sleep_ms(100)
             self.pump_relay.switch(Relay.ON)
             message = "Switched to pump."
         else:
-            message = "ERROR: Can't switch PUMP:%s NOTEBOOKS:%s" % (
-                self.pump_relay.state(), self.notebooks_relay.state())
+            message = "ERROR: Can't switch PUMP:%s LOAD:%s" % (
+                self.pump_relay.state(), self.load_relay.state())
         print(message)
         return message
