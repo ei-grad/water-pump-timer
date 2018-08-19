@@ -44,13 +44,10 @@ class WebForm(object):
         body = client_stream.read(content_length).decode('ascii').strip()
 
         if method == 'GET':
-            if action == '/':
-                send_http_response(client_socket, 200, self.template.format(
-                    message='',
-                    status=self.app.get_status().replace(' ', '<br/>'),
-                    **self.app.config.__dict__))
-            else:
-                send_http_response(client_socket, 404, '')
+            send_http_response(client_socket, 200, self.template.format(
+                message='',
+                status=self.app.get_status().replace(' ', '<br/>'),
+                **self.app.config.__dict__))
         elif method == 'POST':
             if action == '/config':
                 for i in body.split('&'):
