@@ -88,34 +88,13 @@ How to connect to the configured device
    "Connect" button.
 4. Enter the WebREPL password
 
-Quick reference for REPL
-------------------------
+Troubleshooting
+---------------
 
-Available useful variables:
-
-* `p0` - GPIO pin 0, controls the water pump relay
-* `p2` - GPIO pin 2, controls the second relay (not connected for now)
-* `app.config`
-
-Turn on the pump:
+Formatting the FAT:
 
 ```python
-p0.value(0)
+import uos
+import flashbdev
+uos.VfsFat.mkfs(flashbdev.bdev)
 ```
-
-Turn off the pump:
-
-```python
-p0.value(1)
-```
-
-Change interval, duration and rounds count:
-
-```python
-app.config.set('interval', 60)
-app.config.set('duration', 10)
-app.config.set('rounds', 3)
-```
-
-All times are in seconds. Settings are applied immediately and are saved on the
-persistent storage on the ESP8266 chip.
