@@ -67,14 +67,14 @@ class WebForm(object):
                 self.app.start()
                 message = '* timer started'
             else:
-                send_http_response(client_socket, 404, '')
+                send_http_response(client_socket, 404, 'Not Found')
                 return
             send_http_response(client_socket, 200, self.template.format(
                 message=message,
                 status=self.app.get_status().replace(' ', '<br/>'),
                 **self.app.config.__dict__))
         else:
-            send_http_response(client_socket, 405, '')
+            send_http_response(client_socket, 405, 'Method Not Allowed')
 
 
 def send(sock, data):
