@@ -12,16 +12,22 @@ class Relay(object):
             value = int(open('%s.state' % self.name).read())
         except Exception:
             value = Relay.OFF
-            with open('%s.state' % self.name, 'w') as f:
-                f.write('%d\n' % value)
+            try:
+                with open('%s.state' % self.name, 'w') as f:
+                    f.write('%d\n' % value)
+            except OSError as e:
+                print("ERROR: Couldn't save relay state", e)
         self.pin = Pin(pin_number, Pin.OUT, value=value)
 
     def switch(self, value):
         if self.pin.value() != value:
             print("%s: TURNING %s" % (self.name, 'OFF' if value else 'ON'))
             self.pin.value(value)
-            with open('%s.state' % self.name, 'w') as f:
-                f.write('%d\n' % value)
+            try:
+                with open('%s.state' % self.name, 'w') as f:
+                    f.write('%d\n' % value)
+            except OSError as e:
+                print("ERROR: Couldn't save relay state", e)
         else:
             print("%s is already %s" % (self.name, 'OFF' if value else 'ON'))
 

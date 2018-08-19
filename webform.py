@@ -1,4 +1,3 @@
-from machine import reset
 import socket
 
 
@@ -24,12 +23,27 @@ class WebForm(object):
         listen_socket.setsockopt(socket.SOL_SOCKET, 20, self.accept_handler)
         print('\nWebForm service started http://%s:%d' % (self.address, self.port))
 
+    def get_actions(self):
+        return '\n'.join([
+            '<form action=%s method=POST><input type=submit value=%s></form>' % i
+            for i in [
+                    ('switch', 'Switch'),
+                    ('pause', 'Pause') if self.app.running else ('resume', 'Resume'),
+                    ('reset', 'Reset'),
+            ]
+        ])
+
     def accept_handler(self, listen_socket):
 
         client_socket, client_address = listen_socket.accept()
         client_stream = client_socket.makefile('rwb', 0)
 
-        method, action = client_stream.readline().strip().decode('ascii').split()[:2]
+        try:
+            method, action = client_stream.readline().strip().decode('ascii').split()[:2]
+        except Exception:
+            print("ERROR: got incomplete request from ", client_address, ", closing connection")
+            client_socket.close()
+            return
 
         content_length = 0
 
@@ -47,24 +61,27 @@ class WebForm(object):
             send_http_response(client_socket, 200, self.template.format(
                 message='',
                 status=self.app.get_status().replace(' ', '<br/>'),
+                actions=self.get_actions(),
                 **self.app.config.__dict__))
         elif method == 'POST':
             if action == '/config':
                 for i in body.split('&'):
                     k, v = i.split('=')
-                    assert k in ('interval', 'duration', 'rounds')
+                    assert k in ('tick_period', 'load_duration',
+                                 'pump_duration', 'rounds', 'switch_delay')
                     setattr(self.app.config, k, int(v))
                 self.app.config.save()
                 message = '* parameters updated'
             elif action == '/reset':
-                reset()
+                self.app.start()
+                message = '* counters set to zero, timer restarted'
             elif action == '/switch':
                 message = self.app.switch_relays()
-            elif action == '/stop':
-                self.app.stop()
+            elif action == '/pause':
+                self.app.pause()
                 message = '* timer stopped'
-            elif action == '/start':
-                self.app.start()
+            elif action == '/resume':
+                self.app.resume()
                 message = '* timer started'
             else:
                 send_http_response(client_socket, 404, 'Not Found')
@@ -72,15 +89,19 @@ class WebForm(object):
             send_http_response(client_socket, 200, self.template.format(
                 message=message,
                 status=self.app.get_status().replace(' ', '<br/>'),
+                actions=self.get_actions(),
                 **self.app.config.__dict__))
         else:
             send_http_response(client_socket, 405, 'Method Not Allowed')
 
 
 def send(sock, data):
-    bytes_sent = sock.send(data)
-    if bytes_sent != len(data):
-        print("ERROR: couldn't send data in one chunk")
+    while True:
+        bytes_sent = sock.send(data)
+        if bytes_sent != len(data):
+            data = data[bytes_sent:]
+        else:
+            break
 
 
 http_status_messages = {

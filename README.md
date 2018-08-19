@@ -18,37 +18,64 @@ Initial board configuration
 1. Connect ESP8266 via developer board to your PC in firmware mode (hold the
    red button on the down side of the board while connecting).
 
-2. Erase the flash and load the micropython firmware to it:
+2. Erase the flash:
 
 ```bash
 esptool -p /dev/ttyUSB0 -b 115200 erase_flash
+```
+
+3. Reattach the board holding red button again and load the micropython firmware to it:
+
+```bash
 esptool -p /dev/ttyUSB0 -b 115200 write_flash --flash_mode qio 0x0 ./esp8266-20180511-v1.9.4.bin
 ```
 
-3. Reattach the developer board with ESP8266 in regular mode (not holding the red button).
+4. Reattach the developer board with ESP8266 in regular mode (not holding the red button).
 
-4. Connect to the TTY REPL:
+5. Connect to the TTY REPL:
 
 ```bash
 screen /dev/ttyUSB0 115200
 ```
 
-4. Use the TTY REPL to connect the ESP8266 to WiFi:
+6. Use the TTY REPL to connect the ESP8266 to WiFi:
 
 ```python
+import network
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-wlan.scan()
 wlan.connect(ssid, passwd)
 ```
 
-5. Enable the WebREPL and specify its password.
+7. Enable the WebREPL and specify its password.
 
 ```python
 import webrepl_setup
 ```
 
 It would ask for required information interactively.
+
+8. Build and upload code
+
+The `mpy-cross` tool from https://github.com/micropython/micropython is needed
+to precompile modules to python bytecode.
+
+Put the WebREPL password you have specified on previous step to the
+`WEBREPL_PASSWD` env variable, and run `./deploy.sh`:
+
+```
+export WEBREPL_PASSWD=password
+./deploy.sh
+```
+
+9. Reboot the board:
+
+```python
+from machine import reset
+reset()
+```
+
+or you could just reattach it to USB.
 
 How to connect to the configured device
 ---------------------------------------
