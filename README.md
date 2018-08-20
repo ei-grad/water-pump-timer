@@ -40,11 +40,23 @@ screen /dev/ttyUSB0 115200
 
 6. Use the TTY REPL to connect the ESP8266 to WiFi:
 
+First save the wifi credentials to the storage, it would be used by `boot.py`
+script to setup the WiFi connection during the boot:
+
+```python
+f = open('wifi-creds.txt', 'w')
+ssid, password = 'ssid', 'password'  # <-- replace them by actual values
+f.write('%s:%s' % (ssid, password))
+f.close()
+```
+
+Then up the WiFi connection:
+
 ```python
 import network
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-wlan.connect(ssid, passwd)
+wlan.connect(ssid, password)
 ```
 
 7. Enable the WebREPL and specify its password.
@@ -53,7 +65,9 @@ wlan.connect(ssid, passwd)
 import webrepl_setup
 ```
 
-It would ask for required information interactively.
+It would ask for required information interactively. Answer `y` to the reset
+confirmation (it would do the "soft reset", keeping the WiFi connection
+active). This reset is needed to run the WebREPL server.
 
 8. Build and upload code
 

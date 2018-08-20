@@ -77,11 +77,10 @@ class App(object):
         self.running = False
         self.state = self.determine_state()
         self.pause_time = 0
-        self.rounds = 0
         try:
-            self.time = int(open('app.state').read())
+            self.time, self.rounds = [int(i) for i in open('app.state').read().split()]
         except Exception:
-            self.time = 0
+            self.time, self.rounds = 0, 0
         self.last_pump_working = 0
         self.state_changed_at = 0
         self.saved_time_in_current_state = 0
@@ -158,7 +157,7 @@ class App(object):
         self.state_changed_at = self.time
         self.pause_time = 0
         with open('app.state', 'w') as f:
-            f.write('0\n')
+            f.write('0 %d\n' % self.rounds)
 
     def tick(self):
 
@@ -166,10 +165,6 @@ class App(object):
 
         if not self.running:
             self.pause_time += self.config.tick_period
-            # monitor if pin values has been changed by WebREPL
-            state = self.determine_state()
-            if state != self.state:
-                self.state_changed(state)
             if self.time % 1000 == 0:
                 print(self.get_status())
             return
@@ -177,24 +172,24 @@ class App(object):
         time_in_current_state = self.time - self.state_changed_at
         if time_in_current_state - self.saved_time_in_current_state > 60000:
             with open('app.state', 'w') as f:
-                f.write('%s\n' % time_in_current_state)
+                f.write('%d %d\n' % (time_in_current_state, self.rounds))
             self.saved_time_in_current_state = time_in_current_state
 
         if self.state == State.PUMP:
             if time_in_current_state >= self.config.pump_duration * 1000 + self.pause_time:
-                self.pump_relay.switch(Relay.OFF)
-                self.state_changed(State.PUMP_TO_LOAD)
                 self.rounds += 1
+                self.state_changed(State.PUMP_TO_LOAD)
+                self.pump_relay.switch(Relay.OFF)
         elif self.state == State.PUMP_TO_LOAD:
             if time_in_current_state >= self.config.switch_delay + self.pause_time:
-                self.load_relay.switch(Relay.ON)
                 self.state_changed(State.LOAD)
+                self.load_relay.switch(Relay.ON)
         elif self.state == State.LOAD:
             if time_in_current_state >= self.config.load_duration * 1000 + self.pause_time:
                 if self.rounds < self.config.rounds:
+                    self.state_changed(State.PUMP)
                     self.load_relay.switch(Relay.OFF)
                     self.pump_relay.switch(Relay.ON)
-                    self.state_changed(State.PUMP)
                 else:
                     self.running = False
 
@@ -207,15 +202,15 @@ class App(object):
     def switch_relays(self):
 
         if self.state == State.PUMP:
-            self.pump_relay.switch(Relay.OFF)
-            self.state_changed(State.PUMP_TO_LOAD)
             self.rounds += 1
+            self.state_changed(State.PUMP_TO_LOAD)
+            self.pump_relay.switch(Relay.OFF)
             message = "Switching to LOAD..."
 
         elif self.state == State.LOAD:
+            self.state_changed(State.PUMP)
             self.load_relay.switch(Relay.OFF)
             self.pump_relay.switch(Relay.ON)
-            self.state_changed(State.PUMP)
             message = "Switched to PUMP"
 
         else:
