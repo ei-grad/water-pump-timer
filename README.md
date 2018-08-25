@@ -30,9 +30,8 @@ module import, just in the same environment where it is going to be executed
 (in the micropython interpreter running on the ESP8266, in our case).  But it
 could be too demanding process in terms of memory resources, and micropython
 running on ESP8266 may not be able to compile some complex modules by itself.
-So they have to be cross-compiled to `.mpy` files (analog to the `.pyc` files
-of the CPython, the official Python implementation for regular platforms). It
-is done with the
+So this modules have to be cross-compiled to `.mpy` files (analog of the
+CPython `.pyc` files). It is done with the
 [mpy-cross](https://github.com/micropython/micropython/tree/master/mpy-cross)
 tool before being deployed to ESP8266, see the `deploy.sh` script. The
 `main.py` and `boot.py` files shouldn't be compiled because they are always
@@ -220,9 +219,10 @@ Troubleshooting
 ---------------
 
 The FAT filesystem goes trash in some cases. Often the only way to recover the
-device is the full process described in the [Initial board configuration]
-section, but in some cases when the REPL is still available (via WebREPL or USB
-TTY) formatting the FAT and running `deploy.sh` could be enought.
+device is the full process described in the "Initial board configuration"
+section, starting with `erase_flash` command, but in some cases when the REPL
+is still available (via WebREPL or USB TTY) formatting the FAT and running
+`deploy.sh` could be enough.
 
 Format the FAT in REPL:
 
