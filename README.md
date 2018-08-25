@@ -15,7 +15,7 @@ Micropython docs for ESP8266: https://docs.micropython.org/en/latest/esp8266/ind
 Firmware and code
 -----------------
 
-The firmware which is flashed to the board via esptool trough the USB TTY is
+The firmware which is flashed to the board via esptool through the USB TTY is
 the micropython firmware binary. It shouldn't be compiled manually, just take
 the latest ESP8266 binary release from http://micropython.org/download#esp8266.
 
@@ -41,8 +41,9 @@ executed as a scripts, so it is reasonable to keep them short and simple.
 The WebREPL interface could be used to put the `boot.py`, `main.py` and
 pre-compiled modules to the ESP8266 internal FAT filesystem, see `deploy.sh`
 and the instructions in the next section how to use WebREPL to deploy the code.
-Also, the USB TTY interface could be used for this purpose too, there is a
-[adafruit ampy](https://github.com/adafruit/ampy) tool for this, but I had no
+Also, the REPL could be accessed via USB TTY interface, and it could be used
+for this purpose too. There is a [adafruit
+ampy](https://github.com/adafruit/ampy) tool for that purpose, but I had no
 luck to use it successfully yet.
 
 Prerequirements for build and deploy
@@ -51,7 +52,7 @@ Prerequirements for build and deploy
 * `mpy-cross`
 
 The `mpy-cross` tool from https://github.com/micropython/micropython is needed
-to precompile modules to python bytecode.
+to precompile the modules into python bytecode.
 
 Just clone the micropython repository, enter the mpy-cross directory, then
 `make` and copy the built `mpy-cross` binary somewhere to the `$PATH`, for
@@ -61,7 +62,7 @@ example to `/usr/local/bin`.
 git clone https://github.com/micropython/micropython.git
 cd micropython/mpy-cross
 make
-sudo cp ./mpy-cross /usr/local/bin
+sudo cp ./mpy-cross /usr/local/bin/
 ```
 
 For more information see its
