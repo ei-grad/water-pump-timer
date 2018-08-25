@@ -45,6 +45,42 @@ Also, the USB TTY interface could be used for this purpose too, there is a
 [adafruit ampy](https://github.com/adafruit/ampy) tool for this, but I had no
 luck to use it successfully yet.
 
+Prerequirements for build and deploy
+------------------------------------
+
+mpy-cross
+`````````
+
+The `mpy-cross` tool from https://github.com/micropython/micropython is needed
+to precompile modules to python bytecode.
+
+Just clone the micropython repository, enter the mpy-cross directory, then
+`make` and copy the built `mpy-cross` binary somewhere to the `$PATH`, for
+example to `/usr/local/bin`.
+
+```bash
+git clone https://github.com/micropython/micropython.git
+cd micropython/mpy-cross
+make
+sudo cp ./mpy-cross /usr/local/bin
+```
+For more information see its
+[README.md](https://github.com/micropython/micropython/blob/master/mpy-cross/README.md).
+
+`webrepl_cli`
+`````````````
+
+The `webrepl_cli.py` tool from https://github.com/micropython/webrepl is needed
+to copy the code over WebREPL interface. It could be installed this way:
+
+```bash
+curl https://raw.githubusercontent.com/micropython/webrepl/master/webrepl_cli.py > /usr/local/bin/webrepl_cli
+chmod +x /usr/local/bin/webrepl_cli
+MODULES_DIR=/usr/local/lib/python`python -c "import sys; print('{0.major}.{0.minor}'.format(sys.version_info))"`/site-packages
+python -c "import sys; assert '$MODULES_DIR' in sys.path"
+curl https://raw.githubusercontent.com/micropython/webrepl/master/websocket_helper.py > "$MODULES_DIR/websocket_helper.py"
+```
+
 Initial board configuration
 ---------------------------
 
@@ -104,32 +140,32 @@ active). This reset is needed to run the WebREPL server.
 
 8. Build and upload code
 
-Prerequirements:
+Now open the new terminal, clone this repository:
 
-* The `mpy-cross` tool from https://github.com/micropython/micropython is
-  needed to precompile modules to python bytecode. Clone the repository, enter
-the `mpy-cross` directory inside it, and follow the instructions in the
-[README.md](https://github.com/micropython/micropython/blob/master/mpy-cross/README.md)
-(just `make` and copy the built `mpy-cross` binary somewhere to the `$PATH`).
-
-* The `webrepl_cli.py` tool from https://github.com/micropython/webrepl is
-  needed to copy the code over WebREPL interface. It could be installed this way:
-
-```bash
-curl https://raw.githubusercontent.com/micropython/webrepl/master/webrepl_cli.py > ~/.local/bin/webrepl_cli
-chmod +x ~/.local/bin/webrepl_cli
-MODULES_DIR=~/.local/lib/python`python -c "import sys; print('{0.major}.{0.minor}'.format(sys.version_info))"`/site-packages
-mkdir -p "$MODULES_DIR"
-curl https://raw.githubusercontent.com/micropython/webrepl/master/websocket_helper.py > "$MODULES_DIR/websocket_helper.py"
+```
+git clone https://github.com/ei-grad/water-pump-timer.git
+cd water-pump-timer
 ```
 
 Put the WebREPL password you have specified on previous step to the
-`WEBREPL_PASSWD` env variable, and run `./deploy.sh`:
+`WEBREPL_PASSWD` env variable and run `./deploy.sh`:
 
 ```
 export WEBREPL_PASSWD=password
 ./deploy.sh
 ```
+
+Deploy process could hangup due to poor network error handling in webrepl
+server-side code. If it happens - interrupt the `deploy.sh` with Ctrl-C, and
+then return to the USB TTY console and restart the webrepl:
+
+```python
+>>> import webrepl
+>>> webrepl.start()
+```
+
+And then try to run the `./deploy.sh` again. The error could happen for a
+couple of times in a row, just start the webrepl again and repeat.
 
 9. Reboot the board:
 
