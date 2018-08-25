@@ -128,6 +128,13 @@ wlan.active(True)
 wlan.connect(ssid, password)
 ```
 
+To ensure that WiFi has been successfully connected and the device received the
+IP address from DHCP server check the `wlan.ifconfig()` output:
+
+```python
+print('My IP address is', wlan.ifconfig()[0])
+```
+
 7. Enable the WebREPL and specify its password.
 
 ```python
@@ -176,8 +183,11 @@ reset()
 
 or you could just reattach it to USB.
 
-How to connect to the configured device
----------------------------------------
+You now should be able to access the web interface on 80 port of the IP address
+you could see in wlan.ifconfig() output.
+
+How to connect to the WebREPL to execute commands interactively
+---------------------------------------------------------------
 
 1. Clone WebREPL: https://github.com/micropython/webrepl.git
 2. Open its webrepl.html in browser
