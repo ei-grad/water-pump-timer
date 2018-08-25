@@ -131,7 +131,7 @@ class App(object):
                 )
         elif self.state == State.LOAD:
             pump_state = 'PUMP_STANDBY:%s' % format_ms(self.time - self.last_pump_working)
-            if self.running and self.rounds < self.config.rounds - 1:
+            if self.running and self.rounds < self.config.rounds:
                 pump_state += ' PUMP_LAUNCH_IN:%s' % format_ms(
                     self.state_changed_at + self.pause_time + self.config.load_duration * 1000
                     - self.time)
@@ -153,6 +153,8 @@ class App(object):
         )
 
     def state_changed(self, state):
+        if state == State.PUMP_TO_LOAD:
+            self.rounds += 1
         self.state = state
         self.state_changed_at = self.time
         self.pause_time = 0
@@ -177,7 +179,6 @@ class App(object):
 
         if self.state == State.PUMP:
             if time_in_current_state >= self.config.pump_duration * 1000 + self.pause_time:
-                self.rounds += 1
                 self.state_changed(State.PUMP_TO_LOAD)
                 self.pump_relay.switch(Relay.OFF)
         elif self.state == State.PUMP_TO_LOAD:
@@ -202,7 +203,6 @@ class App(object):
     def switch_relays(self):
 
         if self.state == State.PUMP:
-            self.rounds += 1
             self.state_changed(State.PUMP_TO_LOAD)
             self.pump_relay.switch(Relay.OFF)
             message = "Switching to LOAD..."
