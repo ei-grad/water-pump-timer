@@ -49,6 +49,26 @@ luck to use it successfully yet.
 Prerequirements for build and deploy
 ------------------------------------
 
+* `esptool`
+
+It is needed to flush the micropython firmware.
+
+```bash
+pip install esptool
+
+# copy it to be available without the .py suffix
+cp "`which esptool.py`" "`which esptool.py | sed s/.py$//`"
+```
+
+FIXME: Installation via `pip` may not work on MacOS default python because its
+`pip` version is too old.
+
+In ArchLinux it is available in the `community` repository:
+
+```
+pacman -S esptool
+```
+
 * `mpy-cross`
 
 The `mpy-cross` tool from https://github.com/micropython/micropython is needed
