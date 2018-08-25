@@ -18,7 +18,7 @@ input[type=text] {{text-align:right;}}
 <label>Load duration (s):</label><input type=text name=load_duration value={load_duration}><br/>
 <label>Pump duration (s):</label><input type=text name=pump_duration value={pump_duration}><br/>
 <label>Rounds:</label><input type=text name=rounds value={rounds}><br/>
-<label>Load ON delay (ms):</label><input type=text name=switch_delay value={switch_delay}><br/>
+<label>Load ON delay (ms):</label><input type=text name=load_on_delay value={load_on_delay}><br/>
 <label>Tick period (ms):</label><input type=text name=tick_period value={tick_period}><br/>
 <input type=submit value="Apply and save">
 </form>
