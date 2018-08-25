@@ -62,7 +62,15 @@ cp "`which esptool.py`" "`which esptool.py | sed s/.py$//`"
 FIXME: Installation via `pip` may not work on MacOS default python because its
 `pip` version is too old.
 
-In ArchLinux it is available in the `community` repository:
+In Debian and ArchLinux it is available in the official repositories.
+
+For Debian:
+
+```
+apt-get install esptool
+```
+
+For ArchLinux
 
 ```
 pacman -S esptool
