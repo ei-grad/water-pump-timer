@@ -12,6 +12,39 @@ GPIO 0/2 pins are connected to two SRD-05VDC-SL-C relays.
 
 Micropython docs for ESP8266: https://docs.micropython.org/en/latest/esp8266/index.html
 
+Firmware and code
+-----------------
+
+The firmware which is flashed to the board via esptool trough the USB TTY is
+the micropython firmware binary. It shouldn't be compiled manually, just take
+the latest ESP8266 binary release from http://micropython.org/download#esp8266.
+
+During the boot this firmware runs the code from `boot.py` and `main.py` files
+located on the board's internal FAT filesystem, which only could be written and
+accessible from the Python REPL running on the board. The `main.py` also
+imports the code from additional python modules - `app.py`, `webform.py`, etc.
+
+To execute the code the Python interpreter first compiles it to its bytecode
+representation. This compilation normaly goes during the script execution or
+module import, just in the same environment where it is going to be executed
+(in the micropython interpreter running on the ESP8266, in our case).  But it
+could be too demanding process in terms of memory resources, and micropython
+running on ESP8266 may not be able to compile some complex modules by itself.
+So they have to be cross-compiled to `.mpy` files (analog to the `.pyc` files
+of the CPython, the official Python implementation for regular platforms). It
+is be done with the
+[mpy-cross](https://github.com/micropython/micropython/tree/master/mpy-cross)
+tool before being deployed to ESP8266, see the `deploy.sh` script. The
+`main.py` and `boot.py` files shouldn't be compiled because they are always
+executed as a scripts, so it is reasonable to keep them short and simple.
+
+The WebREPL interface could be used to put the `boot.py`, `main.py` and
+pre-compiled modules to the ESP8266 internal FAT filesystem, see `deploy.sh`
+and the instructions in the next section how to use WebREPL to deploy the code.
+Also, the USB TTY interface could be used for this purpose too, there is a
+[adafruit ampy](https://github.com/adafruit/ampy) tool for this, but I have no
+luck to use it successfully yet.
+
 Initial board configuration
 ---------------------------
 
@@ -71,8 +104,21 @@ active). This reset is needed to run the WebREPL server.
 
 8. Build and upload code
 
-The `mpy-cross` tool from https://github.com/micropython/micropython is needed
-to precompile modules to python bytecode.
+Prerequirements:
+
+* The `mpy-cross` tool from https://github.com/micropython/micropython is
+  needed to precompile modules to python bytecode.
+
+* The `webrepl_cli.py` tool from https://github.com/micropython/webrepl is
+  needed to copy the code over WebREPL interface. It could be installed this way:
+
+```bash
+curl https://raw.githubusercontent.com/micropython/webrepl/master/webrepl_cli.py > ~/.local/bin/webrepl_cli
+chmod +x ~/.local/bin/webrepl_cli
+MODULES_DIR=~/.local/lib/python`python -c "import sys; print('{0.major}.{0.minor}'.format(sys.version_info))"`/site-packages
+mkdir -p "$MODULES_DIR"
+curl https://raw.githubusercontent.com/micropython/webrepl/master/websocket_helper.py > "$MODULES_DIR/websocket_helper.py"
+```
 
 Put the WebREPL password you have specified on previous step to the
 `WEBREPL_PASSWD` env variable, and run `./deploy.sh`:
