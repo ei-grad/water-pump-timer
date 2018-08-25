@@ -64,11 +64,12 @@ cd micropython/mpy-cross
 make
 sudo cp ./mpy-cross /usr/local/bin
 ```
+
 For more information see its
 [README.md](https://github.com/micropython/micropython/blob/master/mpy-cross/README.md).
 
-`webrepl_cli`
-`````````````
+webrepl\_cli
+````````````
 
 The `webrepl_cli.py` tool from https://github.com/micropython/webrepl is needed
 to copy the code over WebREPL interface. It could be installed this way:
@@ -158,8 +159,7 @@ Put the WebREPL password you have specified on previous step to the
 `WEBREPL_PASSWD` env variable and run `./deploy.sh`:
 
 ```
-export WEBREPL_PASSWD=password
-./deploy.sh
+WEBREPL_PASSWD=password ./deploy.sh
 ```
 
 Deploy process could hangup due to poor network error handling in webrepl
@@ -200,10 +200,21 @@ How to connect to the WebREPL to execute commands interactively
 Troubleshooting
 ---------------
 
-Formatting the FAT:
+The FAT filesystem goes trash in some cases. Often the only way to recover the
+device is the full process described in the [Initial board configuration]
+section, but in some cases when the REPL is still available (via WebREPL or USB
+TTY) formatting the FAT and running `deploy.sh` could be enought.
+
+Format the FAT in REPL:
 
 ```python
 import uos
 import flashbdev
 uos.VfsFat.mkfs(flashbdev.bdev)
+```
+
+Run `./deploy.sh` in water-pump-timer directory:
+
+```
+WEBREPL_PASSWD=password ./deploy.sh
 ```
