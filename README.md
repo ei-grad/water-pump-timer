@@ -48,8 +48,7 @@ luck to use it successfully yet.
 Prerequirements for build and deploy
 ------------------------------------
 
-mpy-cross
-`````````
+* `mpy-cross`
 
 The `mpy-cross` tool from https://github.com/micropython/micropython is needed
 to precompile modules to python bytecode.
@@ -68,8 +67,7 @@ sudo cp ./mpy-cross /usr/local/bin
 For more information see its
 [README.md](https://github.com/micropython/micropython/blob/master/mpy-cross/README.md).
 
-webrepl\_cli
-````````````
+* `webrepl_cli`
 
 The `webrepl_cli.py` tool from https://github.com/micropython/webrepl is needed
 to copy the code over WebREPL interface. It could be installed this way:
