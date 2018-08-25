@@ -68,7 +68,7 @@ class WebForm(object):
                 for i in body.split('&'):
                     k, v = i.split('=')
                     assert k in ('tick_period', 'load_duration',
-                                 'pump_duration', 'rounds', 'switch_delay')
+                                 'pump_duration', 'rounds', 'load_on_delay')
                     setattr(self.app.config, k, int(v))
                 self.app.config.save()
                 message = '* parameters updated'

@@ -25,7 +25,7 @@ class Config(object):
                     self.load_duration,
                     self.pump_duration,
                     self.rounds,
-                    self.switch_delay,
+                    self.load_on_delay,
                 ) = [
                     int(i) for i in f.read().split()
                 ]
@@ -34,7 +34,7 @@ class Config(object):
             self.load_duration = 3000
             self.pump_duration = 600
             self.rounds = 10
-            self.switch_delay = 100
+            self.load_on_delay = 3000
 
     def save(self):
         config = ' '.join([str(i) for i in (
@@ -42,7 +42,7 @@ class Config(object):
             self.load_duration,
             self.pump_duration,
             self.rounds,
-            self.switch_delay,
+            self.load_on_delay,
         )])
         print('Saving config:', config)
         try:
@@ -138,7 +138,7 @@ class App(object):
         elif self.state == State.PUMP_TO_LOAD:
             pump_state = 'PUMP_STANDBY:%s' % format_ms(self.time - self.last_pump_working)
             pump_state += ' LOAD_LAUNCH_IN:%s' % format_ms(
-                self.state_changed_at + self.config.switch_delay - self.time)
+                self.state_changed_at + self.config.load_on_delay - self.time)
         else:
             pump_state = 'PUMP_STANDBY:%s' % format_ms(self.time - self.last_pump_working)
 
@@ -181,7 +181,7 @@ class App(object):
                 self.state_changed(State.PUMP_TO_LOAD)
                 self.pump_relay.switch(Relay.OFF)
         elif self.state == State.PUMP_TO_LOAD:
-            if time_in_current_state >= self.config.switch_delay + self.pause_time:
+            if time_in_current_state >= self.config.load_on_delay + self.pause_time:
                 self.state_changed(State.LOAD)
                 self.load_relay.switch(Relay.ON)
         elif self.state == State.LOAD:
