@@ -32,7 +32,7 @@ could be too demanding process in terms of memory resources, and micropython
 running on ESP8266 may not be able to compile some complex modules by itself.
 So they have to be cross-compiled to `.mpy` files (analog to the `.pyc` files
 of the CPython, the official Python implementation for regular platforms). It
-is be done with the
+is done with the
 [mpy-cross](https://github.com/micropython/micropython/tree/master/mpy-cross)
 tool before being deployed to ESP8266, see the `deploy.sh` script. The
 `main.py` and `boot.py` files shouldn't be compiled because they are always
@@ -42,7 +42,7 @@ The WebREPL interface could be used to put the `boot.py`, `main.py` and
 pre-compiled modules to the ESP8266 internal FAT filesystem, see `deploy.sh`
 and the instructions in the next section how to use WebREPL to deploy the code.
 Also, the USB TTY interface could be used for this purpose too, there is a
-[adafruit ampy](https://github.com/adafruit/ampy) tool for this, but I have no
+[adafruit ampy](https://github.com/adafruit/ampy) tool for this, but I had no
 luck to use it successfully yet.
 
 Initial board configuration
@@ -107,7 +107,10 @@ active). This reset is needed to run the WebREPL server.
 Prerequirements:
 
 * The `mpy-cross` tool from https://github.com/micropython/micropython is
-  needed to precompile modules to python bytecode.
+  needed to precompile modules to python bytecode. Clone the repository, enter
+the `mpy-cross` directory inside it, and follow the instructions in the
+[README.md](https://github.com/micropython/micropython/blob/master/mpy-cross/README.md)
+(just `make` and copy the built `mpy-cross` binary somewhere to the `$PATH`).
 
 * The `webrepl_cli.py` tool from https://github.com/micropython/webrepl is
   needed to copy the code over WebREPL interface. It could be installed this way:
