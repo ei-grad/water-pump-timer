@@ -184,12 +184,12 @@ class App(object):
         elif self.state == State.PUMP_TO_LOAD:
             if time_in_current_state >= self.config.load_on_delay + self.pause_time:
                 self.state_changed(State.LOAD)
-                self.load_relay.switch(Relay.ON)
+                self.load_relay.switch(Relay.OFF)
         elif self.state == State.LOAD:
             if time_in_current_state >= self.config.load_duration * 1000 + self.pause_time:
                 if self.rounds < self.config.rounds:
                     self.state_changed(State.PUMP)
-                    self.load_relay.switch(Relay.OFF)
+                    self.load_relay.switch(Relay.ON)
                     self.pump_relay.switch(Relay.ON)
                 else:
                     self.running = False
@@ -209,7 +209,7 @@ class App(object):
 
         elif self.state == State.LOAD:
             self.state_changed(State.PUMP)
-            self.load_relay.switch(Relay.OFF)
+            self.load_relay.switch(Relay.ON)
             self.pump_relay.switch(Relay.ON)
             message = "Switched to PUMP"
 
