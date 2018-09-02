@@ -114,9 +114,9 @@ class App(object):
         micropython.schedule(lambda x: self.tick(), 0)
 
     def determine_state(self):
-        if self.pump_relay.is_active() and not self.load_relay.is_active():
+        if self.pump_relay.is_active() and self.load_relay.is_active():
             return State.PUMP
-        if self.load_relay.is_active() and not self.pump_relay.is_active():
+        if (not self.load_relay.is_active()) and not self.pump_relay.is_active():
             return State.LOAD
         return State.UNKNOWN
 
