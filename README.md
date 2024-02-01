@@ -7,6 +7,8 @@ the simple logic to turn on the pump for some time, then wait for some time and
 then repeat. In future it would be triggered by water level monitor, but
 currently it just does the cycle for 10 times.
 
+There is its [web UI screenshot](https://github.com/ei-grad/water-pump-timer/assets/78607/ec5181b8-cc88-40ef-9b0c-8caed300290a).
+
 The board is ESP8266-01, running [micropython](http://micropython.org/). Its
 GPIO 0/2 pins are connected to two SRD-05VDC-SL-C relays.
 
